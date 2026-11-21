@@ -1,0 +1,14 @@
+# build
+target/
+.anchor/
+node_modules/
+dist/
+test-ledger/
+
+# КЛЮЧИ И SEED-ФРАЗЫ НИКОГДА НЕ КОММИТИМ
+*.key
+id.json
+**/*-keypair.json
+keys/
+.env
+.env.*
