@@ -57,4 +57,42 @@ pub mod liquidity_vault {
     ) -> Result<()> {
         instructions::swap::handler(ctx, amount_in, min_amount_out, sqrt_price_limit_x64)
     }
+
+    /// Неделя 13. Открыть позицию vault в CLMM-пуле в диапазоне [tick_lower, tick_upper].
+    #[allow(clippy::too_many_arguments)]
+    pub fn open_position<'info>(
+        ctx: Context<'info, OpenPosition<'info>>,
+        tick_lower: i32,
+        tick_upper: i32,
+        tick_array_lower_start: i32,
+        tick_array_upper_start: i32,
+        liquidity: u128,
+        amount_0_max: u64,
+        amount_1_max: u64,
+    ) -> Result<()> {
+        instructions::position::open_handler(
+            ctx,
+            tick_lower,
+            tick_upper,
+            tick_array_lower_start,
+            tick_array_upper_start,
+            liquidity,
+            amount_0_max,
+            amount_1_max,
+        )
+    }
+
+    /// Неделя 13. Забрать накопленные комиссии позиции.
+    pub fn collect_fees<'info>(ctx: Context<'info, ManagePosition<'info>>) -> Result<()> {
+        instructions::position::collect_handler(ctx)
+    }
+
+    /// Неделя 13. Вывести всю ликвидность (не меньше минимумов) и закрыть позицию.
+    pub fn close_position<'info>(
+        ctx: Context<'info, ManagePosition<'info>>,
+        amount_0_min: u64,
+        amount_1_min: u64,
+    ) -> Result<()> {
+        instructions::position::close_handler(ctx, amount_0_min, amount_1_min)
+    }
 }

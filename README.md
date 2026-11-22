@@ -287,6 +287,69 @@ Slippage — разница между ожидаемой ценой и цено
 
 ---
 
+## Неделя 13. Позиция vault в CLMM-пуле
+
+### Инструкции (только администратор, подписывает PDA `authority`)
+
+| Инструкция | CPI в Raydium | Что делает |
+|---|---|---|
+| `open_position(tick_lower, tick_upper, ta_lower_start, ta_upper_start, liquidity, amount_0_max, amount_1_max)` | `open_position_v2` | vault отдаёт оба токена в пул и получает **NFT позиции на PDA `authority`**. `amount_*_max` — максимум, который vault готов отдать. Адрес NFT и тики сохраняются в `Strategy`, вторую позицию открыть нельзя (`PositionAlreadyOpen`). |
+| `collect_fees()` | `decrease_liquidity_v2(liquidity = 0)` | Raydium выплачивает накопленные комиссии в хранилища vault. Ликвидность остаётся в пуле. |
+| `close_position(amount_0_min, amount_1_min)` | `decrease_liquidity_v2(вся ликвидность)` + `close_position` | Ликвидность программа читает прямо из `PersonalPositionState` Raydium (смещение 81). Вывод всей ликвидности не меньше минимумов, затем NFT сжигается, rent возвращается на `authority`. |
+
+PDA `authority` в `open_position` — это ещё и `payer`: она платит rent за аккаунты позиции (mint NFT, ATA, personal position, tick arrays). Поэтому админ один раз пополнил её на 0.2 SOL ([tx](https://explorer.solana.com/tx/3xJEcjTcWH9bsX8gyxYamaLHCNYaU7mNJzHKU36SJJaT4BtHM29Skt5Dn9FsdKG2riKeyn4QQKKCL6Y4JES5kkjb?cluster=devnet)). Аккаунты и CPI — в [`position.rs`](programs/liquidity-vault/src/instructions/position.rs).
+
+### Devnet: сценарий из методички
+
+Скрипт [`scripts/week13-position.ts`](scripts/week13-position.ts) (`yarn week13`), хелперы в [`scripts/position.ts`](scripts/position.ts). Обмены делает отдельный кошелёк «трейдера» [`8MvpgvVb…qwdV`](https://explorer.solana.com/address/8MvpgvVbjJcFFMjooXQQcvsTTwm9tZ31Xc6mQM1dqwdV?cluster=devnet).
+
+**A. Открыть → обмены → собрать комиссии → закрыть**
+
+| Шаг | Результат | Tx |
+|---|---|---|
+| Старт | цена **102.79**, в vault 2.951653 tSOL + 800 tUSDC | |
+| Открыть позицию ±5% | **выбранный диапазон: 97.50 – 107.33** (tick −23280 … −22320), vault отдал **2.892620 tSOL + 362.3562 tUSDC**, NFT [`9Qmgtp…o5QY`](https://explorer.solana.com/address/9QmgtPxtBUTXBH55WsuRygZ9qaAUENmgXHT88GqEo5QY?cluster=devnet) | [5aTUFCGX](https://explorer.solana.com/tx/5aTUFCGXrBWbuuvBUcnBGMmZqYmxstTuZDRJVeHBE4tFpkTf777bjN4nck772DtvyGA3sGm8ysiXkrnFDjNgyePA?cluster=devnet) |
+| 6 обменов трейдера: 3 × (200 tUSDC → tSOL), 3 × (2 tSOL → tUSDC) | цена 102.67, внутри диапазона | [1](https://explorer.solana.com/tx/4X9HoLcvLqj8MZAeNZ9rajdvBph3ng2dePRdbHuM76KRpDuHtEUSyttDzoLzEapGLhtLsdxMLmCi2Zkfn7nNj3D9?cluster=devnet) [2](https://explorer.solana.com/tx/3n3zqzNBhJeMiUfx6t9PhBZAnNZajoBkyVrM9Dgwv8ZXv2vA3HhEqSM1LcE4yBGxXZEhZKmfTQXTeexiTCLLt2hJ?cluster=devnet) [3](https://explorer.solana.com/tx/2TxQmgYkRddjW1S9HD4HuLStixDEiUMC36xA4gE1e48HWmdx37QHbu3J5LMwDRfryL6yogsRwEQHWeDqKFGUWDZ5?cluster=devnet) [4](https://explorer.solana.com/tx/26sBBpPouxf6W67pGFVXxDw1SJx1PXGViEMnTFhDq8j3KgYhvU2PoSARnhykjNcYbAUmffsRxUw6Tp11TtKeERiD?cluster=devnet) [5](https://explorer.solana.com/tx/ErXiq4b3cbhK3TFuWXDEjS5W1QfyDtPozRJJQzCsN2VzM2kCnx876UoU7GokcMPmNFP97ycKVmuDFftsDdnCG9R?cluster=devnet) [6](https://explorer.solana.com/tx/5ohthM3qGAzs6cepnVoMYMjzz9dypxexmD2BhLPZQUQ3YokvRY6YjkymfzQvVi1xaT4kfSgXa6NcV7s1DZqaoVkX?cluster=devnet) |
+| **Собрать комиссии** | **заработано 0.004891 tSOL + 0.4891 tUSDC** (≈ 0.99 tUSDC) | [h1wXM6Hh](https://explorer.solana.com/tx/h1wXM6HhPtciieEd8X56Hxxug2KSoRHkBE3HgwrNBWMkfnowS2xDHEYv1Yb4BvoHaUi55GwxSSmSJiXZgFYJuWA?cluster=devnet) |
+| **Закрыть позицию** (минимум = ожидаемое − 1%: 2.937626 tSOL / 351.1376 tUSDC) | **вернулось 2.967299 tSOL + 354.6844 tUSDC** | [2q3zPu2t](https://explorer.solana.com/tx/2q3zPu2t3jtu3YzP8KijZYZNGNBtBT6qoNRVTWw4HGWP7rLiFT4HKKyeaZwoM392aZzFiDiBhUg5YBVgycqexNR3?cluster=devnet) |
+
+Проверка комиссий: трейдер прогнал 600 tUSDC и 6 tSOL. При комиссии 0.25% пул собрал 1.5 tUSDC и 0.015 tSOL. 12% из них забирает протокол (`protocolFeeRate`), ещё 4% идут в фонд (`fundFeeRate`), провайдерам остаётся 84%: 1.26 tUSDC и 0.0126 tSOL. Эта сумма делится между двумя позициями пропорционально ликвидности около текущей цены. Vault получил 0.4891 / 1.26 ≈ **39%**.
+
+Вернулось tSOL больше, а tUSDC меньше, чем внесли: цена за время позиции немного опустилась (102.79 → 102.67). Позиция «купила» немного tSOL, как и положено CLMM.
+
+**B. Ребалансировка**
+
+| Шаг | Результат | Tx |
+|---|---|---|
+| Открыть узкую позицию ±3% | диапазон **99.27 – 105.41**, NFT [`w3bDwz…VXE`](https://explorer.solana.com/address/w3bDwz5gLvzz8P7J9ggsbfxDuLNCRSwueeQmxLNJVXE?cluster=devnet) | [7y7RpAyY](https://explorer.solana.com/tx/7y7RpAyYRbWoNr6ZvsRnSLx99hPr1es58Et7zxHGQfTcfywcibQCi5k7hrzGQfyCfQjSewPpd8HztXWuXdQb8L5?cluster=devnet) |
+| Трейдер покупает tSOL (3 × 250 tUSDC) | цена **106.83 > 105.41**: позиция **вышла за диапазон** | [1](https://explorer.solana.com/tx/5nhH4p8S1yT4FLKu4HNe2Z3ESWXFYXipKcWpSjxHBTQrDhvaMn8wmLm6BTfWhtZE5yX2G24ukEkii2sLTnxPfWgn?cluster=devnet) [2](https://explorer.solana.com/tx/uPDdnmqhNZMnK5NXz7WdDwF22TvXo7vbyiz91Shxe1mG889P8Yeno7aaHJMsWUjNnv8qyvizdZHJrhYsmCkbNvo?cluster=devnet) [3](https://explorer.solana.com/tx/241u14NQxfdURdAnQ1VfWZkEWSc2c9GXYnH64EBSv7omxn7cA7gFWgAtD5RpF3bTsSpN2H8TLUKoRMwXm9XxreJb?cluster=devnet) |
+| Закрыть позицию вне диапазона | вернулось **0 tSOL + 699.4062 tUSDC**: весь tSOL продан по пути вверх | [5iMqLsG6](https://explorer.solana.com/tx/5iMqLsG6KCGV8G2SkyGNkAa7Cz5E3TqVXm1wBap1VDXTrvtQ7btdYAiv6VZcAqQNCb8JgLzDB4GPrVCfpCGzhgTt?cluster=devnet) |
+| Vault меняет 150 tUSDC → tSOL (инструкция `swap` недели 12) | в vault 1.451904 tSOL + 952.5092 tUSDC | [JbWnrcXf](https://explorer.solana.com/tx/JbWnrcXfQ2LUjskZm18eEyiSMc2MC1epfcuZtkyjsoJ7vDXpFLrfGa5gf75WsyDRoHon3ADUq9R3wUMKic2kp3D?cluster=devnet) |
+| Новая позиция ±5% вокруг новой цены 108.26 | диапазон **102.30 – 113.28**, vault отдал 1.422866 tSOL + 192.3727 tUSDC | [62UqfMKm](https://explorer.solana.com/tx/62UqfMKmkrfU9CrCQUeue5hXKWhBPQBH4wqQhi9rkHfhUxvp3qAkHpJCwuCPXEUDtPk87YEQGVURMUtRF6qUaGu8?cluster=devnet) |
+
+Обмен для ребалансировки ограничен 150 tUSDC. Выше 109.9 в пуле нет ничьей ликвидности, и обмен на ~550 tUSDC Raydium отклонил с `LiquidityInsufficient`. Поэтому новая позиция меньше, а остаток tUSDC ждёт в хранилище.
+
+**C. Подготовка к выводу (упрощение учебной версии)**
+
+Закрыть позицию ([4cEiudDi](https://explorer.solana.com/tx/4cEiudDi5LVheFg7LHtGixWR5qn7SwRmiY2utGrW5PanRu9rhZcFzj5aoJGHMrrZHiHSKNSXp7N3XFQ5urrEdqc4?cluster=devnet)) и обменять весь tSOL обратно в tUSDC ([667afAYQ](https://explorer.solana.com/tx/667afAYQxTjD21H1o7rMvvb2Rm59ZaVMG8bPxstkgk5FXaSb6U7mUAnT5cNu5uw43Lqe6AB9aCn8UQTL49SY4tnh?cluster=devnet)).
+
+**Итог: в vault 1108.2213 tUSDC на 1000 share** (до недели 12 было 1100). Каждый share стоит **1.1082** tUSDC вместо 1.1: прибыль от комиссий и от того, что vault купил tSOL дешевле, чем продал.
+
+> **Ограничение учебной версии.** `deposit` и `withdraw` считают долю только по `token_vault` (tUSDC). Пока средства лежат в позиции или в tSOL, депозит и вывод были бы несправедливыми. Поэтому перед выводом администратор закрывает позицию и меняет tSOL обратно (шаг C). В настоящих продуктах total assets = хранилища + стоимость позиции по цене пула, и выход происходит автоматически.
+
+### Проверьте себя
+
+**Почему соотношение двух токенов в позиции зависит от того, где текущая цена внутри диапазона?**
+Ликвидность L в CLMM — это «виртуальный» x·y = L² на отрезке [Pa, Pb]. Количество токенов: tSOL = L·(1/√P − 1/√Pb), tUSDC = L·(√P − √Pa). Чем ближе цена к нижней границе, тем больше в позиции tSOL; чем ближе к верхней, тем больше tUSDC. На шаге A1 цена 102.79 стояла почти в середине диапазона 97.5–107.3, и vault отдал около 297 tUSDC в tSOL и 362 tUSDC — почти поровну.
+
+**Что будет с позицией, если цена уйдёт выше верхней границы?**
+Пока цена росла, покупатели забирали из позиции tSOL и платили tUSDC. На верхней границе tSOL кончается, и позиция целиком в tUSDC. Выше границы она не участвует в обменах и ничего не зарабатывает. Это видно на шаге B3: вернулось 0 tSOL и 699 tUSDC.
+
+**Зачем нужна ребалансировка и кто её делает?**
+Позиция вне диапазона стоит без дохода. Ребалансировка — закрыть её, привести пропорцию токенов обменом и открыть новую вокруг текущей цены (шаги B3–B5). Делает её администратор (стратег) vault — это и есть «работа», за которую пользователи доверяют vault средства. Сама программа не даёт администратору забрать токены: все действия идут между хранилищами vault и пулом и подписываются PDA.
+
+---
+
 ## Запуск
 
 ```bash
@@ -299,6 +362,7 @@ yarn week09                               # депозиты в devnet (прим
 yarn week10                               # вывод 100 share в devnet
 yarn week11                               # токен tSOL, CLMM-пул Raydium и позиция 90–110
 yarn week12                               # init_strategy + обмен vault через Raydium (успешный и slippage)
+yarn week13                               # позиция vault: открыть, обмены, комиссии, закрыть, ребалансировка
 ```
 
 Адреса в devnet сохраняются в [`deployments/devnet.json`](deployments/devnet.json).

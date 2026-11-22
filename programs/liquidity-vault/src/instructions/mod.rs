@@ -7,6 +7,7 @@ pub mod deposit;
 pub mod init_strategy;
 pub mod initialize_vault;
 pub mod open_user_position;
+pub mod position;
 pub mod swap;
 pub mod withdraw;
 
@@ -14,5 +15,6 @@ pub use deposit::*;
 pub use init_strategy::*;
 pub use initialize_vault::*;
 pub use open_user_position::*;
+pub use position::*;
 pub use swap::*;
 pub use withdraw::*;

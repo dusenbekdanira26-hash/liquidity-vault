@@ -7,8 +7,8 @@ export const CLMM_PROGRAM_ID: PublicKey = DEVNET_PROGRAM_ID.CLMM_PROGRAM_ID;
 export const txVersion = TxVersion.V0;
 
 /** Raydium SDK v2, настроенный на devnet (по образцу raydium-sdk-V2-demo/src/config.ts). */
-export async function initRaydium() {
-  const owner = loadWallet();
+export async function initRaydium(ownerOverride?: import("@solana/web3.js").Keypair) {
+  const owner = ownerOverride ?? loadWallet();
   const connection = new Connection(RPC_URL, "confirmed");
   const raydium = await Raydium.load({
     owner,
