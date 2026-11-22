@@ -6,4 +6,8 @@ pub enum VaultError {
     Unauthorized,
     #[msg("Арифметическое переполнение")]
     MathOverflow,
+    #[msg("Сумма должна быть больше нуля")]
+    ZeroAmount,
+    #[msg("Слишком маленький депозит: share-токенов получилось 0")]
+    ZeroShares,
 }

@@ -8,5 +8,9 @@
   "authority": "EfiKYtKRk38vz9Zttxk1H6jrVfL6MGTn2EiupGVxzJbR",
   "shareMint": "9WGAAQvBABS62PzNcyuWGbgPuyPz2twF3sMndRUTW36R",
   "tokenVault": "H7wkWAuEQoqU7X4oFsMiDYdHwmsnT5Mir6cLezuyio17",
-  "userPosition": "9SoccM8m6bmkcdN9cFCTohWf9iLyKQgW7ypTT7YHbuvj"
+  "userPosition": "9SoccM8m6bmkcdN9cFCTohWf9iLyKQgW7ypTT7YHbuvj",
+  "txDeposit1": "58wd61GQYTD819ebRH1SwshgKYbcQd7rTsS7XZDdjUGQJ6JrYRVUfj8fEEZP9tW8iF4prr2w3BzczfYYn4JsUe3g",
+  "txSimulatedYield": "2DzFz5F11S6UgGpvWi7f9xkVts4X63be2LKYySJWfRDkxW4xnG2HLZ5WdxqSg1AE626nLQzASATXCprKN3C9t3VA",
+  "txDeposit2": "4FcbDMu4UfytsEsJUbzXEStKf5nrGs6yidpS51dT3NdUNarb9Q1cNsYFhfExAD5oZjmvmovwkPKvanvRSqTqX3QK",
+  "userShareAccount": "DYtcEMHfTK3yS9oX3t9wE1ePZMDjEC9NbNe2FzpPUrzL"
 }

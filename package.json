@@ -4,6 +4,7 @@
   "license": "MIT",
   "scripts": {
     "week08": "ts-node scripts/week08-init.ts",
+    "week09": "ts-node scripts/week09-deposit.ts",
     "lint": "prettier --check \"{scripts,tests}/**/*.ts\""
   },
   "dependencies": {

@@ -9,6 +9,7 @@ use anchor_lang::prelude::*;
 pub mod constants;
 pub mod errors;
 pub mod instructions;
+pub mod math;
 pub mod state;
 
 use instructions::*;
@@ -29,5 +30,10 @@ pub mod liquidity_vault {
     /// Адрес карточки = PDA от адреса vault и адреса пользователя.
     pub fn open_user_position(ctx: Context<OpenUserPosition>) -> Result<()> {
         instructions::open_user_position::handler(ctx)
+    }
+
+    /// Неделя 9. Внести `amount` токенов и получить share-токены.
+    pub fn deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
+        instructions::deposit::handler(ctx, amount)
     }
 }
