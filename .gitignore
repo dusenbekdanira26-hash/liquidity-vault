@@ -12,3 +12,6 @@ id.json
 keys/
 .env
 .env.*
+
+# отчёты о падениях компилятора
+rustc-ice-*.txt

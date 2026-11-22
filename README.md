@@ -184,6 +184,61 @@ Cross-Program Invocation — вызов одной программы из др�
 
 ---
 
+## Неделя 11. AMM и концентрированная ликвидность
+
+Скрипт [`scripts/week11-pool.ts`](scripts/week11-pool.ts) (`yarn week11`) использует официальный Raydium SDK v2. Он устроен по образцу `raydium-sdk-V2-demo/src/clmm/createPool.ts` и `createPosition.ts`, настройка devnet лежит в [`scripts/raydium.ts`](scripts/raydium.ts).
+
+### Тестовые токены
+
+| Токен | Знаков | Mint | Роль |
+|---|---|---|---|
+| **tUSDC** | 6 | [`CufWmi…fLiAK`](https://explorer.solana.com/address/CufWmiDiJsq9JjGSK69by59X4Sou5eJDLUrG3mYfLiAK?cluster=devnet) | токен vault с недели 8 (его принимает vault) |
+| **tSOL** | 9 | [`4cGUJ5…bpDbvb`](https://explorer.solana.com/address/4cGUJ55Jo9ms2aJN6xJ7hknc7vFfpRBymoZU3rbpDbvb?cluster=devnet) | второй токен пула |
+
+Оба токена наши: mint authority — кошелёк администратора. Себе выпущено 1000 tSOL и 100 000 tUSDC. Первым токеном пула специально взят токен vault: на неделе 12 vault будет менять через этот пул часть tUSDC на tSOL.
+
+### CLMM-пул Raydium (devnet)
+
+| Что | Адрес / значение |
+|---|---|
+| Программа Raydium CLMM (devnet) | [`DRayAUgENGQBKVaX8owNhgzkEDyoHTGVEGHVJT1E9pfH`](https://explorer.solana.com/address/DRayAUgENGQBKVaX8owNhgzkEDyoHTGVEGHVJT1E9pfH?cluster=devnet) |
+| **Пул tSOL/tUSDC** | [`ALEGmaWrZyPTfiwdD1hDQxnx5SEXgSjVpUfxE43dmeHM`](https://explorer.solana.com/address/ALEGmaWrZyPTfiwdD1hDQxnx5SEXgSjVpUfxE43dmeHM?cluster=devnet) |
+| Fee-конфиг | [`CD4aJt…Q1qu`](https://explorer.solana.com/address/CD4aJtX11cqTCAc83nxSPkkh5JW2yjD6uwHeovjqQ1qu?cluster=devnet): комиссия **0.25%**, tickSpacing **60** |
+| mintA / mintB | tSOL / tUSDC (Raydium сортирует mint по адресу) |
+| Хранилища пула A / B | [`BT2TvT…miSi`](https://explorer.solana.com/address/BT2TvTxMSKcvB5JUnQdwW79TzHcMRgrdpbJVdUqwmiSi?cluster=devnet) / [`J96HTy…WAK`](https://explorer.solana.com/address/J96HTySQwiVTeZTjiotf72cKaVPggUxjFyGATwFaRWAK?cluster=devnet) |
+| Observation (оракул) | [`8JrsDR…ReZS`](https://explorer.solana.com/address/8JrsDRsDraGo4gda2i445zrcALSSVQb7Rf9DvJu3ReZS?cluster=devnet) |
+| Tick-array bitmap extension | [`7yfqJJ…6W3v`](https://explorer.solana.com/address/7yfqJJ1DhJM38aXqH6SyofQSxBmguhqWcd5tjnyd6W3v?cluster=devnet) |
+| Транзакция создания пула | [mNapqJbv…oexy7Joi1](https://explorer.solana.com/tx/mNapqJbvFmeetvrnBfj8nfyKoeyRGiNePLLEVf9gk9mJmnDLjZ2CHPY9LhPJhchuPkHdqYQG9WU8BKoexy7Joi1?cluster=devnet) |
+
+Все адреса для недель 12–13 сохранены в [`deployments/devnet.json`](deployments/devnet.json).
+
+### Позиция со своего кошелька
+
+| | |
+|---|---|
+| **Текущая цена пула** | **100 tUSDC за 1 tSOL** (tick −23028) |
+| **Выбранный диапазон** | **90 – 110 tUSDC за tSOL** → после выравнивания по шагу 60 тиков: tick −24120 … −22080 ≈ **89.6 – 109.9** |
+| Внесено | 10 tSOL + ≈1150 tUSDC |
+| NFT позиции | [`8nk5VW…JJkx`](https://explorer.solana.com/address/8nk5VWQSM5S9C8rjNLpieHX4juVn8Fw1ZtamHVXUJJkx?cluster=devnet) |
+| Транзакция | [4LC8CgbZ…en28LNU3x](https://explorer.solana.com/tx/4LC8CgbZZH7uRomR8VSZCJc6eiyU1HMVzjNGntYSib8FzkqsunfiessiQibpQKGxJux1AhZBdvkZ7c8en28LNU3x?cluster=devnet) |
+
+**Почему именно ±10%.** Это правило из методички: от текущей цены отступаем вверх и вниз на величину обычного колебания за период. Для пары «SOL/USDC» ±10% — типичное недельное движение. Узкий диапазон (±1–2%) зарабатывает больше, но цена быстро из него выходит, и тогда позиция стоит без дохода. Широкий (×0.5 – ×2) спокойнее, но ликвидность «размазана» и комиссий меньше. ±10% — середина. Ещё одна практическая причина: в пуле пока только наша ликвидность. Достаточно широкий диапазон нужен, чтобы тестовые обмены на неделе 12 не выталкивали цену за его границы с первой сделки.
+
+Почему tUSDC внесено больше, чем 10 × 100 = 1000: в CLMM пропорция зависит от того, где цена внутри диапазона, в «корневой» шкале √P. √100 ближе к √110, чем к √90 в относительных единицах, поэтому tUSDC нужно чуть больше.
+
+### Проверьте себя
+
+**Чем концентрированная ликвидность отличается от простого пула?**
+В простом пуле (x·y = k) ликвидность распределена по всем ценам от 0 до ∞, и при обычной цене работает только малая её часть. В CLMM провайдер сам выбирает диапазон [Pa, Pb], и вся его ликвидность работает только там. Поэтому та же сумма даёт гораздо больше глубины около текущей цены и больше комиссий. Каждая позиция отдельная, со своим диапазоном. В Raydium она оформлена как NFT.
+
+**Что происходит с позицией, когда цена выходит за её диапазон?**
+Она перестаёт участвовать в обменах и зарабатывать комиссии. Пока цена шла к границе, обменщики забирали из позиции один токен и оставляли другой, поэтому за границей позиция целиком состоит из одного токена. Выше верхней границы — только tUSDC (все tSOL проданы), ниже нижней — только tSOL. Доход вернётся, когда цена вернётся в диапазон или позицию передвинут (ребалансировка).
+
+**Почему узкий диапазон зарабатывает больше, но требует больше внимания?**
+Та же сумма на меньшем отрезке цен даёт больше ликвидности L на каждый тик. Доля позиции в каждом обмене выше, поэтому и комиссий больше. Но цена выходит из узкого диапазона чаще, и каждый раз позиция перестаёт зарабатывать, пока администратор её не переставит. Это стоит комиссий сети и обменов.
+
+---
+
 ## Запуск
 
 ```bash
@@ -194,6 +249,7 @@ anchor deploy --provider.cluster devnet
 yarn week08                               # создать тестовый токен, vault и карточку в devnet
 yarn week09                               # депозиты в devnet (пример 1000 → +100 → 110)
 yarn week10                               # вывод 100 share в devnet
+yarn week11                               # токен tSOL, CLMM-пул Raydium и позиция 90–110
 ```
 
 Адреса в devnet сохраняются в [`deployments/devnet.json`](deployments/devnet.json).

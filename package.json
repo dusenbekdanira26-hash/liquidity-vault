@@ -6,12 +6,16 @@
     "week08": "ts-node scripts/week08-init.ts",
     "week09": "ts-node scripts/week09-deposit.ts",
     "week10": "ts-node scripts/week10-withdraw.ts",
+    "week11": "ts-node scripts/week11-pool.ts",
     "lint": "prettier --check \"{scripts,tests}/**/*.ts\""
   },
   "dependencies": {
     "@anchor-lang/core": "1.2.2",
+    "@raydium-io/raydium-sdk-v2": "0.2.85-alpha",
     "@solana/spl-token": "^0.4.9",
-    "@solana/web3.js": "^1.98.0"
+    "@solana/web3.js": "^1.98.0",
+    "bn.js": "^5.2.1",
+    "decimal.js": "^10.4.3"
   },
   "devDependencies": {
     "@types/chai": "^4.3.0",

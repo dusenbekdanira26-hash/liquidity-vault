@@ -13,5 +13,21 @@
   "txSimulatedYield": "2DzFz5F11S6UgGpvWi7f9xkVts4X63be2LKYySJWfRDkxW4xnG2HLZ5WdxqSg1AE626nLQzASATXCprKN3C9t3VA",
   "txDeposit2": "4FcbDMu4UfytsEsJUbzXEStKf5nrGs6yidpS51dT3NdUNarb9Q1cNsYFhfExAD5oZjmvmovwkPKvanvRSqTqX3QK",
   "userShareAccount": "DYtcEMHfTK3yS9oX3t9wE1ePZMDjEC9NbNe2FzpPUrzL",
-  "txWithdraw": "2QcDuz1Gr9MSEZeXx98pPfTjT2R8GfxYAp1JHc2mowjFYrLd7Jk5bysRFieWtmA7syvBySRY8NDRhdJx9AStU7z4"
+  "txWithdraw": "2QcDuz1Gr9MSEZeXx98pPfTjT2R8GfxYAp1JHc2mowjFYrLd7Jk5bysRFieWtmA7syvBySRY8NDRhdJx9AStU7z4",
+  "tSolMint": "4cGUJ55Jo9ms2aJN6xJ7hknc7vFfpRBymoZU3rbpDbvb",
+  "week11Minted": "1000 tSOL + 100000 tUSDC",
+  "poolId": "ALEGmaWrZyPTfiwdD1hDQxnx5SEXgSjVpUfxE43dmeHM",
+  "txCreatePool": "mNapqJbvFmeetvrnBfj8nfyKoeyRGiNePLLEVf9gk9mJmnDLjZ2CHPY9LhPJhchuPkHdqYQG9WU8BKoexy7Joi1",
+  "positionNftMint": "8nk5VWQSM5S9C8rjNLpieHX4juVn8Fw1ZtamHVXUJJkx",
+  "txOpenPosition": "4LC8CgbZZH7uRomR8VSZCJc6eiyU1HMVzjNGntYSib8FzkqsunfiessiQibpQKGxJux1AhZBdvkZ7c8en28LNU3x",
+  "positionTicks": "-24120..-22080",
+  "clmmProgramId": "DRayAUgENGQBKVaX8owNhgzkEDyoHTGVEGHVJT1E9pfH",
+  "poolAmmConfig": "CD4aJtX11cqTCAc83nxSPkkh5JW2yjD6uwHeovjqQ1qu",
+  "poolMintA": "4cGUJ55Jo9ms2aJN6xJ7hknc7vFfpRBymoZU3rbpDbvb",
+  "poolMintB": "CufWmiDiJsq9JjGSK69by59X4Sou5eJDLUrG3mYfLiAK",
+  "poolVaultA": "BT2TvTxMSKcvB5JUnQdwW79TzHcMRgrdpbJVdUqwmiSi",
+  "poolVaultB": "J96HTySQwiVTeZTjiotf72cKaVPggUxjFyGATwFaRWAK",
+  "poolObservation": "8JrsDRsDraGo4gda2i445zrcALSSVQb7Rf9DvJu3ReZS",
+  "poolExBitmap": "7yfqJJ1DhJM38aXqH6SyofQSxBmguhqWcd5tjnyd6W3v",
+  "poolTickSpacing": "60"
 }
