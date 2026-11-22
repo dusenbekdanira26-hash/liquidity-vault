@@ -13,5 +13,7 @@ keys/
 .env
 .env.*
 
+app/dist/
+
 # отчёты о падениях компилятора
 rustc-ice-*.txt

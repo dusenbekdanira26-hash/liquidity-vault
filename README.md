@@ -6,6 +6,90 @@
 
 > Работаем только в devnet и localnet. Ключи и seed-фразы в репозиторий не попадают (см. `.gitignore`).
 
+## Что делает продукт
+
+1. **Пользователь** подключает Phantom или Solflare (devnet), вносит tUSDC и получает share-токены. Share — доля в общем котле: когда vault зарабатывает, каждый share стоит больше tUSDC. При выводе пользователь сжигает share и забирает свою долю.
+2. **Администратор (стратег)** размещает средства vault в CLMM-пуле Raydium: меняет часть tUSDC на tSOL, открывает позицию в ценовом диапазоне, собирает комиссии, закрывает и переставляет позицию (ребалансировка).
+3. **Деньгами владеет программа.** Хранилища, share-токен и NFT позиции принадлежат PDA `authority` без приватного ключа. Администратор может только запускать стратегию, а программа сама проверяет, что токены двигаются лишь между хранилищами vault и пулом.
+
+Результат в devnet: vault начал с 1100 tUSDC на 1000 share, поработал в пуле (недели 12–13) и закончил с **1108.22 tUSDC**. Цена share выросла с 1.1000 до **1.1082**.
+
+## Как запустить
+
+Нужны Rust, Solana CLI, Anchor 1.2.2, Node 20+ и Yarn.
+
+```bash
+yarn install
+yarn app            # веб-интерфейс: http://localhost:5173
+```
+
+Откройте страницу, переключите кошелёк (Phantom или Solflare) на **Devnet**, возьмите немного devnet SOL на faucet.solana.com и получите тестовые tUSDC от администратора: `yarn mint-test <ваш_адрес> 1000`. Дальше: «Открыть карточку» → «Внести» → «Вывести». Вкладка «Администратор» работает только с кошельком админа.
+
+Программа, тесты и скрипты недель:
+
+```bash
+anchor build
+anchor test --provider.cluster localnet --validator legacy   # 9 интеграционных тестов
+cargo test -p liquidity-vault --lib                        # юнит-тесты математики долей
+anchor deploy --provider.cluster devnet
+yarn week08 … yarn week13                                   # сценарии недель в devnet
+yarn app:build                                              # production-сборка интерфейса в app/dist
+```
+
+## Адреса в devnet
+
+| Что | Адрес |
+|---|---|
+| Программа `liquidity_vault` | [`oZTAvFts97FCp3ninxy5JTa57adEogs8V48PFMvstcY`](https://explorer.solana.com/address/oZTAvFts97FCp3ninxy5JTa57adEogs8V48PFMvstcY?cluster=devnet) |
+| Vault | [`EZEuHcmq7UKLjGNTJar9BYdC9LfVUqLy2oDUXZ1F8s7d`](https://explorer.solana.com/address/EZEuHcmq7UKLjGNTJar9BYdC9LfVUqLy2oDUXZ1F8s7d?cluster=devnet) |
+| PDA authority | [`EfiKYtKRk38vz9Zttxk1H6jrVfL6MGTn2EiupGVxzJbR`](https://explorer.solana.com/address/EfiKYtKRk38vz9Zttxk1H6jrVfL6MGTn2EiupGVxzJbR?cluster=devnet) |
+| Share-токен | [`9WGAAQvBABS62PzNcyuWGbgPuyPz2twF3sMndRUTW36R`](https://explorer.solana.com/address/9WGAAQvBABS62PzNcyuWGbgPuyPz2twF3sMndRUTW36R?cluster=devnet) |
+| Хранилище tUSDC / tSOL | [`H7wkWA…io17`](https://explorer.solana.com/address/H7wkWAuEQoqU7X4oFsMiDYdHwmsnT5Mir6cLezuyio17?cluster=devnet) / [`token_vault_b`](deployments/devnet.json) |
+| Strategy | см. `strategy` в [`deployments/devnet.json`](deployments/devnet.json) |
+| tUSDC / tSOL | [`CufWmi…fLiAK`](https://explorer.solana.com/address/CufWmiDiJsq9JjGSK69by59X4Sou5eJDLUrG3mYfLiAK?cluster=devnet) / [`4cGUJ5…bpDbvb`](https://explorer.solana.com/address/4cGUJ55Jo9ms2aJN6xJ7hknc7vFfpRBymoZU3rbpDbvb?cluster=devnet) |
+| CLMM-пул Raydium tSOL/tUSDC | [`ALEGmaWrZyPTfiwdD1hDQxnx5SEXgSjVpUfxE43dmeHM`](https://explorer.solana.com/address/ALEGmaWrZyPTfiwdD1hDQxnx5SEXgSjVpUfxE43dmeHM?cluster=devnet) |
+| Администратор | [`A8KgRCLXAqAEKrxjYr3mgforwTMXQrBKk7bEVZ8FLU6k`](https://explorer.solana.com/address/A8KgRCLXAqAEKrxjYr3mgforwTMXQrBKk7bEVZ8FLU6k?cluster=devnet) |
+
+Все адреса машиночитаемо лежат в [`deployments/devnet.json`](deployments/devnet.json). Веб-интерфейс берёт их оттуда.
+
+## Схема аккаунтов (итоговая)
+
+```mermaid
+flowchart LR
+    User([пользователь]) -- deposit / withdraw --> Vault
+    Admin([администратор]) -- "swap, open/collect/close position<br/>(has_one = admin)" --> Strategy
+
+    subgraph P["Программа liquidity_vault"]
+        Vault["Vault<br/>['vault', deposit_mint]"]
+        UP["UserPosition<br/>['user_position', vault, user]"]
+        Strategy["Strategy<br/>['strategy', vault]<br/>pool, other_mint, NFT, тики"]
+        Auth["authority (PDA, без ключа)<br/>['authority', vault]<br/>подписывает все CPI"]
+    end
+    subgraph T["SPL Token"]
+        Share["share_mint ['share_mint', vault]"]
+        TV["token_vault (tUSDC) ['token_vault', vault]"]
+        TVB["token_vault_b (tSOL) ['token_vault_b', vault]"]
+    end
+    subgraph R["Raydium CLMM"]
+        Pool["пул tSOL/tUSDC"]
+        Pos["позиция + NFT<br/>(владелец NFT = authority)"]
+    end
+    Auth -. mint/burn .-> Share
+    Auth -. владеет .-> TV & TVB & Pos
+    TV <-- "swap_v2 (CPI)" --> Pool
+    TVB <-- "swap_v2 (CPI)" --> Pool
+    TV & TVB -- "open_position_v2 /<br/>decrease_liquidity_v2" --> Pos
+    Pos --- Pool
+```
+
+## Кто что сделал
+
+| Участник | Вклад |
+|---|---|
+| [dusenbekdanira26-hash](https://github.com/dusenbekdanira26-hash) | вся работа: программа (недели 8–13), тесты, скрипты devnet, пул и позиции Raydium, веб-интерфейс, README |
+
+Каждая неделя — отдельный коммит в истории репозитория.
+
 ---
 
 ## Неделя 8. Каркас vault
@@ -347,6 +431,37 @@ PDA `authority` в `open_position` — это ещё и `payer`: она плат
 
 **Зачем нужна ребалансировка и кто её делает?**
 Позиция вне диапазона стоит без дохода. Ребалансировка — закрыть её, привести пропорцию токенов обменом и открыть новую вокруг текущей цены (шаги B3–B5). Делает её администратор (стратег) vault — это и есть «работа», за которую пользователи доверяют vault средства. Сама программа не даёт администратору забрать токены: все действия идут между хранилищами vault и пулом и подписываются PDA.
+
+---
+
+## Неделя 14. Capstone: веб-интерфейс (вариант А)
+
+Веб-интерфейс в [`app/`](app): Vite + React + Solana Wallet Adapter. Phantom и Solflare находятся автоматически через Wallet Standard, отдельные адаптеры не нужны. Запуск: `yarn app`, сборка: `yarn app:build`.
+
+Интерфейс использует **тот же код**, что и скрипты недель: [`scripts/lib/`](scripts/lib) (PDA, симуляция обмена Raydium, позиция). Логика в UI и в проверенных в devnet сценариях одна и та же. IDL программы лежит в [`app/src/idl/`](app/src/idl), адреса — в [`deployments/devnet.json`](deployments/devnet.json).
+
+**Вкладка «Мой vault»** (любой пользователь):
+- подключение кошелька (кнопка справа сверху) и подсказки, если на кошельке нет devnet SOL или tUSDC;
+- сколько всего в vault, сколько выпущено share, **цена 1 share**, текущая цена пула;
+- мой баланс tUSDC, мои share, их стоимость в tUSDC, внесённое по учёту;
+- «Открыть карточку» (один раз), **«Внести»** с предпросмотром share, **«Вывести»** с предпросмотром tUSDC и кнопкой «Все»;
+- пока средства vault в позиции или в tSOL, депозит и вывод заблокированы с объяснением (упрощение учебной версии, см. неделю 13).
+
+**Вкладка «Администратор»** (действия активны только для кошелька `vault.admin`, программа всё равно проверяет `has_one = admin`):
+- цена пула, хранилища tUSDC и tSOL, текущая позиция и её статус (в диапазоне или нужна ребалансировка);
+- **обмен** tUSDC ↔ tSOL: «Рассчитать» показывает ожидаемую сумму (симулятор Raydium) и минимум с учётом slippage;
+- **открыть позицию** с диапазоном ± %, **собрать комиссии**, **закрыть позицию**.
+
+**Статус транзакций**: каждое действие появляется в блоке «Транзакции» как ⏳, потом ✅ со ссылкой на Explorer или ❌ с текстом ошибки программы (например, `Too little output received`).
+
+Тестовые tUSDC для своего кошелька выдаёт администратор: `yarn mint-test <адрес> 1000` ([`scripts/mint-test.ts`](scripts/mint-test.ts)).
+
+### Чек-лист готовности
+
+- [x] Программа в devnet, адрес указан в README
+- [x] Через интерфейс работают основные действия: карточка, депозит, вывод; обмен и позиция у администратора. Интерфейс вызывает те же инструкции с теми же аккаунтами, что и сценарии `yarn week09`–`week13`, прошедшие в devnet. В браузере проверены чтение состояния vault, пула и позиции и расчёт обмена симулятором Raydium. Подпись транзакций из Phantom или Solflare нужно прогнать на занятии с реальным кошельком.
+- [x] В репозитории нет ключей и seed-фраз (`.gitignore`, проверка перед каждым коммитом)
+- [x] У участника есть свои коммиты (по одному на неделю)
 
 ---
 

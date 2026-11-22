@@ -1,0 +1,89 @@
+:root {
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --text: #171a26;
+  --muted: #6b7185;
+  --line: #e3e6ef;
+  --accent: #6d4aff;
+  --accent-text: #ffffff;
+  --ok: #16a34a;
+  --err: #dc2626;
+  --warn-bg: #fff7e6;
+  --warn-line: #f5c46b;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1117;
+    --card: #181b24;
+    --text: #eceef5;
+    --muted: #9aa0b4;
+    --line: #2a2e3b;
+    --accent: #8b6dff;
+    --warn-bg: #2b2414;
+    --warn-line: #7a5b1d;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+a { color: var(--accent); }
+code { background: var(--line); padding: 1px 5px; border-radius: 4px; font-size: 0.9em; word-break: break-all; }
+.page { max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.logo { font-size: 34px; color: var(--accent); }
+h1 { margin: 0; font-size: 22px; }
+h2 { margin: 0 0 12px; font-size: 17px; }
+h3 { margin: 0 0 8px; font-size: 15px; }
+p { margin: 0 0 8px; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.tabs { display: flex; gap: 6px; margin: 20px 0 16px; border-bottom: 1px solid var(--line); }
+.tabs button {
+  background: none; border: none; color: var(--muted); padding: 10px 14px; cursor: pointer;
+  border-bottom: 2px solid transparent; font: inherit; border-radius: 0;
+}
+.tabs button.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-bottom: 16px; }
+.center { text-align: center; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.card .grid { margin-bottom: 12px; }
+.stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.stat .value { font-size: 20px; font-weight: 600; margin: 2px 0; font-variant-numeric: tabular-nums; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.form { border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+label { display: block; color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+label.inline { display: flex; align-items: center; gap: 8px; margin: 0; }
+input, select {
+  width: 100%; padding: 9px 11px; border-radius: 9px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--text); font: inherit; margin-top: 4px;
+}
+label.inline input { margin: 0; width: 120px; }
+input.short { width: 70px !important; }
+select { width: auto; margin: 0; }
+.row { display: flex; gap: 8px; align-items: center; }
+.row input { margin: 0; }
+.wrap { flex-wrap: wrap; margin-bottom: 10px; }
+button {
+  background: var(--accent); color: var(--accent-text); border: none; border-radius: 9px;
+  padding: 9px 16px; font: inherit; font-weight: 600; cursor: pointer;
+}
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--line); }
+button.danger { background: var(--err); }
+.actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.alert { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 10px; padding: 10px 12px; margin: 0 0 12px; }
+.alert.error { border-color: var(--err); }
+.txs { list-style: none; padding: 0; margin: 0; }
+.txs li { display: flex; gap: 10px; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.txs li:last-child { border-bottom: none; }
+.grow { flex: 1; }
+.err { color: var(--err); width: 100%; font-size: 13px; }
+footer { margin-top: 24px; text-align: center; }
+.wallet-adapter-button-trigger { background: var(--accent) !important; }
