@@ -36,4 +36,9 @@ pub mod liquidity_vault {
     pub fn deposit(ctx: Context<Deposit>, amount: u64) -> Result<()> {
         instructions::deposit::handler(ctx, amount)
     }
+
+    /// Неделя 10. Вернуть `shares` share-токенов и забрать свою долю токенов.
+    pub fn withdraw(ctx: Context<Withdraw>, shares: u64) -> Result<()> {
+        instructions::withdraw::handler(ctx, shares)
+    }
 }

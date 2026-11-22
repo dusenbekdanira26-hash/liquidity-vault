@@ -119,5 +119,62 @@ describe("liquidity-vault", () => {
         expect(String(e)).to.include("ZeroAmount");
       }
     });
+
+    describe("неделя 10: вывод", () => {
+      const withdraw = (shares: number) =>
+        program.methods
+          .withdraw(new anchor.BN(shares))
+          .accountsPartial({
+            user: admin.publicKey,
+            vault,
+            authority,
+            depositMint,
+            shareMint,
+            tokenVault,
+            userTokenAccount: userToken,
+            userShareAccount: userShare,
+            userPosition,
+          })
+          .rpc();
+
+      it("100 share → 110 токенов (share подорожал после дохода)", async () => {
+        // сейчас: в vault 1210, share 1100
+        const before = Number((await getAccount(provider.connection, userToken)).amount);
+        await withdraw(100 * UNIT);
+        const after = Number((await getAccount(provider.connection, userToken)).amount);
+        expect(after - before).to.eq(110 * UNIT);
+        expect(Number((await getMint(provider.connection, shareMint)).supply)).to.eq(1_000 * UNIT);
+        expect(Number((await getAccount(provider.connection, tokenVault)).amount)).to.eq(1_100 * UNIT);
+        // учёт уменьшился пропорционально: 1110 * 100/1100 = 100.909090
+        const p = await program.account.userPosition.fetch(userPosition);
+        expect(p.deposited.toNumber()).to.eq(1_110 * UNIT - Math.floor((1_110 * UNIT * 100) / 1_100));
+      });
+
+      it("нельзя вывести больше, чем есть share", async () => {
+        try {
+          await withdraw(1_001 * UNIT);
+          expect.fail("должно быть отклонено");
+        } catch (e: any) {
+          expect(String(e)).to.include("InsufficientShares");
+        }
+      });
+
+      it("администратор не может забрать токены из хранилища своей подписью", async () => {
+        try {
+          await transfer(provider.connection, admin, tokenVault, userToken, admin, 1);
+          expect.fail("перевод из хранилища без PDA должен быть отклонён");
+        } catch (e: any) {
+          expect(String(e)).to.match(/owner does not match|custom program error: 0x4/i);
+        }
+      });
+
+      it("вывод всех share возвращает всё содержимое хранилища", async () => {
+        await withdraw(1_000 * UNIT);
+        expect(Number((await getMint(provider.connection, shareMint)).supply)).to.eq(0);
+        expect(Number((await getAccount(provider.connection, tokenVault)).amount)).to.eq(0);
+        const p = await program.account.userPosition.fetch(userPosition);
+        expect(p.deposited.toNumber()).to.eq(0);
+      });
+    });
   });
 });

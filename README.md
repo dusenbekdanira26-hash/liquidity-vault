@@ -138,6 +138,52 @@ oZTAvF…stcY  (наша программа)            invoke [1]  Instruction:
 
 ---
 
+## Неделя 10. CPI и вывод из vault
+
+### Инструкция `withdraw(shares)`
+
+1. Проверить: `shares > 0` и у пользователя есть столько share (`InsufficientShares`).
+2. Посчитать: `amount = shares × total_assets / total_shares` (u128, округление вниз).
+3. CPI `burn`: сжечь share пользователя. Подписывает **пользователь**, его подпись передаётся дальше по цепочке.
+4. CPI `transfer_checked`: `token_vault` → пользователь. Подписывает **программа** от имени PDA `authority` (`CpiContext::new_with_signer` с seeds `["authority", vault, bump]`).
+5. Учёт: `deposited` уменьшается пропорционально возвращённой доле: `deposited × shares / user_shares`.
+
+### Devnet
+
+Скрипт [`scripts/week10-withdraw.ts`](scripts/week10-withdraw.ts) (`yarn week10`).
+Транзакция: [2QcDuz1G…hdJx9AStU7z4](https://explorer.solana.com/tx/2QcDuz1Gr9MSEZeXx98pPfTjT2R8GfxYAp1JHc2mowjFYrLd7Jk5bysRFieWtmA7syvBySRY8NDRhdJx9AStU7z4?cluster=devnet)
+
+| | В vault | Share выпущено | Мои share | Мои токены |
+|---|---|---|---|---|
+| до | 1210 | 1100 | 1100 | 8790 |
+| после `withdraw(100 share)` | 1100 | 1000 | 1000 | 8900 (**+110**) |
+
+Пользователь вернул 100 share и получил 110 токенов: это его доля в доходе +100 с недели 9.
+
+### Какие CPI-вызовы видны в транзакции вывода
+
+В Explorer, в разделе **Inner Instructions** у инструкции нашей программы `oZTAvF…stcY`, два вызова Token Program:
+
+| # | Вызов | Кто подписал (`authority`) | Что сделано |
+|---|---|---|---|
+| 1 | `burn` | `A8KgRC…LU6k`, кошелёк **пользователя** | сожжено 100 share с его ATA `DYtcEM…UrzL` |
+| 2 | `transferChecked` | `EfiKYt…zJbR`, **PDA authority** vault | 110 токенов из `token_vault` `H7wkWA…io17` → пользователю `7jA2Ds…Qc8P` |
+
+Подпись PDA в транзакции не видна: её нет среди подписей. Token Program принимает `authority` как подписанта, потому что наша программа вызвала его через `invoke_signed` с правильными seeds.
+
+### Проверьте себя
+
+**Что такое CPI и зачем он нужен?**
+Cross-Program Invocation — вызов одной программы из другой внутри той же транзакции. Наша программа сама не двигает токены: балансы хранит Token Program, и менять их может только она. Vault «просит» её сделать `transfer`, `mint_to` или `burn`. Так же на неделях 12–13 vault будет вызывать Raydium.
+
+**Когда подписывает пользователь, а когда программа?**
+Когда двигаются токены пользователя (перевод при депозите, сжигание share при выводе), подписывает пользователь. Его подпись из транзакции передаётся в CPI. Когда двигаются токены vault или выпускаются share, подписывает программа от имени PDA `authority` через `invoke_signed`.
+
+**Почему администратор не может просто забрать токены из vault своей подписью?**
+Владелец `token_vault` — PDA `authority`, а не администратор. У PDA нет приватного ключа, и подписать за неё может только наша программа. В коде программы нет инструкции, которая отдаёт токены кому-то кроме пользователя, сжигающего свои share. Тест `администратор не может забрать токены из хранилища своей подписью` проверяет это: Token Program отклоняет такой перевод с ошибкой `owner does not match`.
+
+---
+
 ## Запуск
 
 ```bash
@@ -147,6 +193,7 @@ anchor test --provider.cluster localnet --validator legacy   # тесты на s
 anchor deploy --provider.cluster devnet
 yarn week08                               # создать тестовый токен, vault и карточку в devnet
 yarn week09                               # депозиты в devnet (пример 1000 → +100 → 110)
+yarn week10                               # вывод 100 share в devnet
 ```
 
 Адреса в devnet сохраняются в [`deployments/devnet.json`](deployments/devnet.json).

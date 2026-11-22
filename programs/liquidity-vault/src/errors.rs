@@ -10,4 +10,6 @@ pub enum VaultError {
     ZeroAmount,
     #[msg("Слишком маленький депозит: share-токенов получилось 0")]
     ZeroShares,
+    #[msg("Недостаточно share-токенов")]
+    InsufficientShares,
 }
