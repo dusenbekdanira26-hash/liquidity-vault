@@ -21,6 +21,25 @@ pub struct Vault {
     pub authority_bump: u8,
 }
 
+/// Стратегия vault (недели 12–13). PDA: ["strategy", vault].
+/// Отдельный аккаунт, чтобы не менять layout уже созданного `Vault`.
+#[account]
+#[derive(InitSpace)]
+pub struct Strategy {
+    pub vault: Pubkey,
+    /// CLMM-пул Raydium, с которым работает vault.
+    pub pool_state: Pubkey,
+    /// Второй токен пула.
+    pub other_mint: Pubkey,
+    /// Второе хранилище vault (для other_mint). Владелец — PDA authority.
+    pub token_vault_b: Pubkey,
+    /// NFT открытой позиции (Pubkey::default(), если позиции нет).
+    pub position_nft_mint: Pubkey,
+    pub tick_lower: i32,
+    pub tick_upper: i32,
+    pub bump: u8,
+}
+
 /// Карточка пользователя. PDA: ["user_position", vault, owner].
 /// Адрес вычисляется из адреса пользователя, поэтому список пользователей
 /// хранить не нужно — карточку всегда можно найти.

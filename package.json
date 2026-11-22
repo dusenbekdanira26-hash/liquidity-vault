@@ -7,6 +7,7 @@
     "week09": "ts-node scripts/week09-deposit.ts",
     "week10": "ts-node scripts/week10-withdraw.ts",
     "week11": "ts-node scripts/week11-pool.ts",
+    "week12": "ts-node scripts/week12-swap.ts",
     "lint": "prettier --check \"{scripts,tests}/**/*.ts\""
   },
   "dependencies": {

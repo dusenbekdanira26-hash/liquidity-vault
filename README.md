@@ -239,6 +239,54 @@ Cross-Program Invocation — вызов одной программы из др�
 
 ---
 
+## Неделя 12. Swap через Raydium
+
+### Что добавлено в программу
+
+- **`Strategy`**, PDA `["strategy", vault]`: пул, второй токен, второе хранилище, (позже) NFT позиции. Это отдельный аккаунт, чтобы не менять layout уже созданного в devnet `Vault`.
+- **`token_vault_b`**, PDA `["token_vault_b", vault]`: второе хранилище vault для tSOL, владелец — PDA `authority`.
+- **`init_strategy`** (только админ): привязывает vault к пулу. Проверяет, что владелец пула — программа Raydium CLMM.
+- **`swap(amount_in, min_amount_out, sqrt_price_limit_x64)`** (только админ, `has_one = admin`): CPI `swap_v2` в Raydium.
+  - Входное и выходное хранилища обязаны быть хранилищами этого vault, пул — пулом стратегии.
+  - `payer` обмена = PDA `authority`, подпись через `invoke_signed`.
+  - `other_amount_threshold = min_amount_out`: Raydium сам отменяет обмен, если отдаёт меньше. Поверх этого программа ещё раз сверяет фактически полученное (`SlippageExceeded`).
+  - Tick arrays по пути обмена и bitmap extension передаются как `remaining_accounts`.
+
+CPI собирается вручную ([`raydium.rs`](programs/liquidity-vault/src/raydium.rs)): дискриминатор `sha256("global:swap_v2")[..8]` и borsh-аргументы, порядок аккаунтов как в `SwapSingleV2` из [raydium-clmm](https://github.com/raydium-io/raydium-clmm). Крейт CPI из `raydium-cpi-example` привязан к Anchor 0.29, проект — на Anchor 1.2.2, поэтому подключать его не стали.
+
+### Devnet
+
+Скрипт [`scripts/week12-swap.ts`](scripts/week12-swap.ts) (`yarn week12`). Ожидаемую сумму считает симулятор Raydium SDK (`swapInternal`, как в `raydium-sdk-V2-demo/src/clmm/swap.ts`), минимум = ожидаемое − 1%.
+
+| | В vault | Цена пула (tUSDC за tSOL) | Транзакция |
+|---|---|---|---|
+| `init_strategy` | 1100 tUSDC | 100.0000 | [2PRuk6w2…5q9otZfL](https://explorer.solana.com/tx/2PRuk6w2j9bEqs4t4RDEPaADhN1PuWHBP6kBjiPginzUwpMqw6u7qLYF7MGMEdPXyMx1n9HEpSuGdTZK5q9otZfL?cluster=devnet) |
+| ✅ **Обмен 300 tUSDC → tSOL**: ожидали 2.951653 tSOL, минимум 2.922137, **получили 2.951653** | 800 tUSDC + 2.951653 tSOL | **102.7869** (tick −23028 → −22753) | [YGdJMGra…kAwTNk7](https://explorer.solana.com/tx/YGdJMGradw5V1mnbrQBUeap7bFb4gwL9KMqUCragmVgaExdwcmGida7izazotNafKLhvFeUp61bW4B9akAwTNk7?cluster=devnet) |
+| ❌ **Обмен 50 tUSDC с минимумом на 5% выше возможного**: отклонён | без изменений | без изменений | [2aTPMNBJ…ywLF7Pjv](https://explorer.solana.com/tx/2aTPMNBJpFmDwuwSsBDBWNLrD3c2tYUT6HvWvfig8CuiiURJhFu9vt2bj99BSZvfoFFQR7iQbQBu5SG6ywLF7Pjv?cluster=devnet) |
+
+Лог отклонённой транзакции:
+```
+Program log: AnchorError thrown in programs/amm/src/instructions/swap_v2.rs:364.
+Error Code: TooLittleOutputReceived. Error Number: 6018.
+Program DRayAU…9pfH failed: custom program error: 0x1782
+Program oZTAvF…stcY failed: custom program error: 0x1782
+```
+
+**Как изменилась цена.** Vault купил tSOL, поэтому tSOL в пуле стало меньше, а tUSDC больше, и цена tSOL выросла с **100.00 до 102.79 (+2.8%)**. Средняя цена сделки: 300 / 2.9517 ≈ **101.64**, это между ценой до и после. Сдвиг заметный, потому что в пуле только одна позиция (≈10 tSOL + 1150 tUSDC): обмен на 300 tUSDC — это около четверти tUSDC в позиции. Цена осталась внутри диапазона 89.6 – 109.9.
+
+### Проверьте себя
+
+**Что такое slippage и как от него защищаются?**
+Slippage — разница между ожидаемой ценой и ценой, по которой обмен прошёл на самом деле. Пока транзакция летит в сеть, другие могут сдвинуть цену; ещё её сдвигает сам объём сделки. Защита — минимум, который ты согласен получить (`other_amount_threshold`). Если пул отдаёт меньше, обмен отменяется целиком, и токены не уходят (это видно во второй транзакции). Также можно задать `sqrt_price_limit_x64`, предельную цену, дальше которой обмен не пойдёт.
+
+**Почему цена сдвигается сильнее, если около текущей цены мало ликвидности?**
+Обмен «проходит» по тикам: в каждом тике пул отдаёт токены из ликвидности L, которая там есть. Чем меньше L около текущей цены, тем больше тиков нужно пройти, чтобы набрать ту же сумму, и тем дальше уходит цена. В нашем пуле ликвидность одной позиции, поэтому 300 tUSDC сдвинули цену на 2.8%. В пуле с ликвидностью в 100 раз больше сдвиг был бы около 0.03%.
+
+**Почему обмен подписывает программа, а не администратор?**
+Токены, которые меняются, лежат в хранилищах vault, а их владелец — PDA `authority`. Подписать за неё может только программа через `invoke_signed`. Администратор лишь запускает инструкцию, и программа проверяет, что это он (`has_one = admin`). Сами токены он не трогает и в своё хранилище вывести их не может: обмен идёт только между двумя хранилищами vault.
+
+---
+
 ## Запуск
 
 ```bash
@@ -250,6 +298,7 @@ yarn week08                               # создать тестовый то
 yarn week09                               # депозиты в devnet (пример 1000 → +100 → 110)
 yarn week10                               # вывод 100 share в devnet
 yarn week11                               # токен tSOL, CLMM-пул Raydium и позиция 90–110
+yarn week12                               # init_strategy + обмен vault через Raydium (успешный и slippage)
 ```
 
 Адреса в devnet сохраняются в [`deployments/devnet.json`](deployments/devnet.json).

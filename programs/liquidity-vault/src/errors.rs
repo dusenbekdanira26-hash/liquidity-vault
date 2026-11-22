@@ -12,4 +12,12 @@ pub enum VaultError {
     ZeroShares,
     #[msg("Недостаточно share-токенов")]
     InsufficientShares,
+    #[msg("Аккаунт не принадлежит vault или пулу стратегии")]
+    InvalidAccount,
+    #[msg("Получено меньше минимума (slippage)")]
+    SlippageExceeded,
+    #[msg("Позиция уже открыта")]
+    PositionAlreadyOpen,
+    #[msg("Открытой позиции нет")]
+    NoOpenPosition,
 }

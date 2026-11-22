@@ -29,5 +29,11 @@
   "poolVaultB": "J96HTySQwiVTeZTjiotf72cKaVPggUxjFyGATwFaRWAK",
   "poolObservation": "8JrsDRsDraGo4gda2i445zrcALSSVQb7Rf9DvJu3ReZS",
   "poolExBitmap": "7yfqJJ1DhJM38aXqH6SyofQSxBmguhqWcd5tjnyd6W3v",
-  "poolTickSpacing": "60"
+  "poolTickSpacing": "60",
+  "txInitStrategy": "2PRuk6w2j9bEqs4t4RDEPaADhN1PuWHBP6kBjiPginzUwpMqw6u7qLYF7MGMEdPXyMx1n9HEpSuGdTZK5q9otZfL",
+  "strategy": "Bqq9jqLqzLmCXf2yE21mCS6s12J1qu2Ttduh9yFFenDn",
+  "tokenVaultB": "96mbAzYXktH2LeDvm4TwDGLvRP3JXNuthSJGy8yysaun",
+  "txSwapOk": "YGdJMGradw5V1mnbrQBUeap7bFb4gwL9KMqUCragmVgaExdwcmGida7izazotNafKLhvFeUp61bW4B9akAwTNk7",
+  "txSwapSlippageFail": "2aTPMNBJpFmDwuwSsBDBWNLrD3c2tYUT6HvWvfig8CuiiURJhFu9vt2bj99BSZvfoFFQR7iQbQBu5SG6ywLF7Pjv",
+  "week12": "{\"swapIn\":\"300 tUSDC\",\"expectedOut\":2.951653212,\"minOut\":2.922136679,\"received\":2.951653212,\"priceBefore\":100,\"priceAfter\":102.7869,\"tickBefore\":-23028,\"tickAfter\":-22753,\"failReason\":\"Program log: AnchorError thrown in programs/amm/src/instructions/swap_v2.rs:364. Error Code: TooLittleOutputReceived. Error Number: 6018. Error Message: Too little output received. | Program DRayAUgENGQBKVaX8owNhgzkEDyoHTGVEGHVJT1E9pfH failed: custom program error: 0x1782 | Program oZTAvFts97FCp3ninxy5JTa57adEogs8V48PFMvstcY failed: custom program error: 0x1782\"}"
 }

@@ -10,6 +10,7 @@ pub mod constants;
 pub mod errors;
 pub mod instructions;
 pub mod math;
+pub mod raydium;
 pub mod state;
 
 use instructions::*;
@@ -40,5 +41,20 @@ pub mod liquidity_vault {
     /// Неделя 10. Вернуть `shares` share-токенов и забрать свою долю токенов.
     pub fn withdraw(ctx: Context<Withdraw>, shares: u64) -> Result<()> {
         instructions::withdraw::handler(ctx, shares)
+    }
+
+    /// Неделя 12. Привязать vault к CLMM-пулу Raydium, создать второе хранилище.
+    pub fn init_strategy(ctx: Context<InitStrategy>) -> Result<()> {
+        instructions::init_strategy::handler(ctx)
+    }
+
+    /// Неделя 12. Обменять `amount_in` через пул; получить не меньше `min_amount_out`.
+    pub fn swap<'info>(
+        ctx: Context<'info, Swap<'info>>,
+        amount_in: u64,
+        min_amount_out: u64,
+        sqrt_price_limit_x64: u128,
+    ) -> Result<()> {
+        instructions::swap::handler(ctx, amount_in, min_amount_out, sqrt_price_limit_x64)
     }
 }
